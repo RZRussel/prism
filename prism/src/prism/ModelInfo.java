@@ -57,6 +57,19 @@ public interface ModelInfo
 		if (someValues != null && someValues.getNumValues() > 0)
 			throw new PrismException("This model has no constants to set");
 	}
+	
+	/**
+	 * Set values for *some* undefined constants.
+	 * If there are no undefined constants, {@code someValues} can be null.
+	 * Undefined constants can be subsequently redefined to different values with the same method.
+	 * The current constant values (if set) are available via {@link #getConstantValues()}.
+	 */
+	public default void setSomeUndefinedConstants(Values someValues, boolean exact) throws PrismException
+	{
+		// By default, assume there are no constants to define 
+		if (someValues != null && someValues.getNumValues() > 0)
+			throw new PrismException("This model has no constants to set");
+	}
 
 	/**
 	 * Get access to the values for all constants in the model, including the 

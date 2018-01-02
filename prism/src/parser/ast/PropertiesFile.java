@@ -536,6 +536,18 @@ public class PropertiesFile extends ASTElement
 	 * Undefined constants can be subsequently redefined to different values with the same method.
 	 * The current constant values (if set) are available via {@link #getConstantValues()}. 
 	 */
+	public void setUndefinedConstants(Values someValues) throws PrismLangException
+	{
+		setUndefinedConstants(someValues, false);
+	}
+
+	/**
+	 * Set values for *all* undefined constants and then evaluate all constants.
+	 * If there are no undefined constants, {@code someValues} can be null.
+	 * If argument 'exact' is true, constants are evaluated using exact arithmetic (BigRational)
+	 * Undefined constants can be subsequently redefined to different values with the same method.
+	 * The current constant values (if set) are available via {@link #getConstantValues()}. 
+	 */
 	public void setUndefinedConstants(Values someValues, boolean exact) throws PrismLangException
 	{
 		// Might need values for ModulesFile constants too
@@ -547,6 +559,18 @@ public class PropertiesFile extends ASTElement
 	/**
 	 * Set values for *some* undefined constants and then evaluate all constants where possible.
 	 * If there are no undefined constants, {@code someValues} can be null.
+	 * Undefined constants can be subsequently redefined to different values with the same method.
+	 * The current constant values (if set) are available via {@link #getConstantValues()}.
+	 */
+	public void setSomeUndefinedConstants(Values someValues) throws PrismLangException
+	{
+		setUndefinedConstants(someValues, false);
+	}
+
+	/**
+	 * Set values for *some* undefined constants and then evaluate all constants where possible.
+	 * If there are no undefined constants, {@code someValues} can be null.
+	 * If argument 'exact' is true, constants are evaluated using exact arithmetic (BigRational)
 	 * Undefined constants can be subsequently redefined to different values with the same method.
 	 * The current constant values (if set) are available via {@link #getConstantValues()}.
 	 */

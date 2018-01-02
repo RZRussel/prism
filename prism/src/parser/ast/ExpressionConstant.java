@@ -85,7 +85,7 @@ public class ExpressionConstant extends Expression
 
 		if (res instanceof BigRational) {
 			// Constants can also be BigRational, cast to appropriate type
-			// This might loose precision
+			// This might lose precision
 			BigRational r = (BigRational) res;
 			return getType().castFromBigRational(r);
 		}

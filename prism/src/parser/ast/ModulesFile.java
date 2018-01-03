@@ -1183,10 +1183,16 @@ public class ModulesFile extends ASTElement implements ModelInfo
 		findAllVars(varNames, varTypes);
 	}
 
-	@Override
-	public boolean rewardStructHasTransitionRewards(int i)
+	/**
+	 * Returns true if the {@code r}th reward structure defines transition rewards.
+	 * ({@code r} is indexed from 0, not from 1 like at the user (property language) level).
+	 * If this returns false, the model checker is allowed to ignore them (which may be more efficient).
+	 * If using an algorithm or implementation that does not support transition rewards,
+	 * you may need to return false here (as well as not defining transition rewards).
+	 */
+	public boolean rewardStructHasTransitionRewards(int r)
 	{
-		RewardStruct rewStr = getRewardStruct(i);
+		RewardStruct rewStr = getRewardStruct(r);
 		return rewStr.getNumTransItems() > 0;
 	}
 

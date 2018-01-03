@@ -21,8 +21,9 @@ import prism.ModelType;
 import prism.PrismComponent;
 import prism.PrismException;
 import prism.PrismLangException;
+import prism.RewardGenerator;
 
-public class ModulesFileModelGeneratorSymbolic implements ModelGeneratorSymbolic
+public class ModulesFileModelGeneratorSymbolic implements ModelGeneratorSymbolic, RewardGenerator
 {
 	// Parent PrismComponent (logs, settings etc.)
 	protected PrismComponent parent;
@@ -205,29 +206,11 @@ public class ModulesFileModelGeneratorSymbolic implements ModelGeneratorSymbolic
 	}
 	
 	@Override
-	public int getNumRewardStructs()
+	public VarList createVarList()
 	{
-		return modulesFile.getNumRewardStructs();
+		return varList;
 	}
 	
-	@Override
-	public List<String> getRewardStructNames()
-	{
-		return modulesFile.getRewardStructNames();
-	}
-	
-	@Override
-	public int getRewardStructIndex(String name)
-	{
-		return modulesFile.getRewardStructIndex(name);
-	}
-	
-	@Override
-	public RewardStruct getRewardStruct(int i)
-	{
-		return modulesFile.getRewardStruct(i);
-	}
-
 	// Methods for ModelGenerator interface
 	
 	@Override
@@ -353,6 +336,20 @@ public class ModulesFileModelGeneratorSymbolic implements ModelGeneratorSymbolic
 		return expr.evaluateBoolean(exploreState);
 	}
 	
+	// Methods for RewardGenerator interface
+	
+	@Override
+	public List<String> getRewardStructNames()
+	{
+		return modulesFile.getRewardStructNames();
+	}
+	
+	@Override
+	public boolean hasTransitionRewards(int i)
+	{
+		return modulesFile.rewardStructHasTransitionRewards(i);
+	}
+	
 	@Override
 	public double getStateReward(int r, State state) throws PrismException
 	{
@@ -396,28 +393,17 @@ public class ModulesFileModelGeneratorSymbolic implements ModelGeneratorSymbolic
 		return d;
 	}
 	
-	//@Override
-	public void calculateStateRewards(State state, double[] store) throws PrismLangException
-	{
-		// TODO updater.calculateStateRewards(state, store);
-	}
+	// ModelGeneratorSymbolic
 	
 	@Override
-	public VarList createVarList()
+	public Expression getUnknownConstantDefinition(String name) throws PrismException
 	{
-		return varList;
-	}
-	
-	// Miscellaneous (unused?) methods
-	
-	//@Override
-	public void getRandomInitialState(RandomNumberGenerator rng, State initialState) throws PrismException
-	{
-		if (modulesFile.getInitialStates() == null) {
-			initialState.copy(modulesFile.getDefaultInitialState());
-		} else {
-			throw new PrismException("Random choice of multiple initial states not yet supported");
+		ConstantList constantList = modulesFile.getConstantList();
+		int i = constantList.getConstantIndex(name);
+		if (i == -1) {
+			throw new PrismException("Unknown constant " + name);
 		}
+		return constantList.getConstant(i);
 	}
 
 	// Local utility methods
@@ -434,24 +420,5 @@ public class ModulesFileModelGeneratorSymbolic implements ModelGeneratorSymbolic
 			transitionListBuilt = true;
 		}
 		return transitionList;
-	}
-
-	// ModelGeneratorSymbolic
-	
-	@Override
-	public Expression getUnknownConstantDefinition(String name) throws PrismException
-	{
-		ConstantList constantList = modulesFile.getConstantList();
-		int i = constantList.getConstantIndex(name);
-		if (i == -1) {
-			throw new PrismException("Unknown constant " + name);
-		}
-		return constantList.getConstant(i);
-	}
-
-	@Override
-	public boolean rewardStructHasTransitionRewards(int i)
-	{
-		return modulesFile.rewardStructHasTransitionRewards(i);
 	}
 }

@@ -102,7 +102,7 @@ public class ConstructRewards
 		}
 		
 		// TODO: Transition rewards for Markov chains not supported yet 
-		if (rewardGen.hasTransitionRewards(r)) {
+		if (rewardGen.rewardStructHasTransitionRewards(r)) {
 			throw new PrismNotSupportedException("Explicit engine does not yet handle transition rewards for D/CTMCs");
 		}
 
@@ -113,24 +113,26 @@ public class ConstructRewards
 			// State rewards
 			double rew = 0;
 			Object stateIndex = null;
-			switch (rewardGen.getRewardLookup()) {
-			case BY_STATE:
-				State state = statesList.get(s);
-				stateIndex = state;
-				rew = rewardGen.getStateReward(r, state);
-				break;
-			case BY_STATE_INDEX:
-				stateIndex = new Integer(s);
-				rew = rewardGen.getStateReward(r, s);
-				break;
-			default:
-				throw new PrismException("Unknown state lookup mechanism for reward generator");
+			if (rewardGen.rewardStructHasStateRewards(r)) {
+				switch (rewardGen.getRewardLookup()) {
+				case BY_STATE:
+					State state = statesList.get(s);
+					stateIndex = state;
+					rew = rewardGen.getStateReward(r, state);
+					break;
+				case BY_STATE_INDEX:
+					stateIndex = new Integer(s);
+					rew = rewardGen.getStateReward(r, s);
+					break;
+				default:
+					throw new PrismException("Unknown state lookup mechanism for reward generator");
+				}
+				if (Double.isNaN(rew))
+					throw new PrismException("State reward evaluates to NaN at state " + stateIndex);
+				if (!allowNegative && rew < 0)
+					throw new PrismException("State reward is negative (" + rew + ") at state " + stateIndex + "");
+				rewSA.addToStateReward(s, rew);
 			}
-			if (Double.isNaN(rew))
-				throw new PrismException("State reward evaluates to NaN at state " + stateIndex);
-			if (!allowNegative && rew < 0)
-				throw new PrismException("State reward is negative (" + rew + ") at state " + stateIndex +"");
-			rewSA.addToStateReward(s, rew);
 		}
 		return rewSA;
 	}
@@ -150,45 +152,49 @@ public class ConstructRewards
 			// State rewards
 			double rew = 0;
 			Object stateIndex = null;
-			switch (rewardGen.getRewardLookup()) {
-			case BY_STATE:
-				State state = statesList.get(s);
-				stateIndex = state;
-				rew = rewardGen.getStateReward(r, state);
-				break;
-			case BY_STATE_INDEX:
-				stateIndex = new Integer(s);
-				rew = rewardGen.getStateReward(r, s);
-				break;
-			default:
-				throw new PrismException("Unknown state lookup mechanism for reward generator");
-			}
-			if (Double.isNaN(rew))
-				throw new PrismException("State reward evaluates to NaN at state " + stateIndex);
-			if (!allowNegative && rew < 0)
-				throw new PrismException("State reward is negative (" + rew + ") at state " + stateIndex +"");
-			rewSimple.addToStateReward(s, rew);
-			// State-action rewards
-			int numChoices = mdp.getNumChoices(s);
-			for (int k = 0; k < numChoices; k++) {
+			if (rewardGen.rewardStructHasStateRewards(r)) {
 				switch (rewardGen.getRewardLookup()) {
 				case BY_STATE:
 					State state = statesList.get(s);
 					stateIndex = state;
-					rew = rewardGen.getStateActionReward(r, state, mdp.getAction(s, k));
+					rew = rewardGen.getStateReward(r, state);
 					break;
 				case BY_STATE_INDEX:
 					stateIndex = new Integer(s);
-					rew = rewardGen.getStateActionReward(r, s, mdp.getAction(s, k));
+					rew = rewardGen.getStateReward(r, s);
 					break;
 				default:
 					throw new PrismException("Unknown state lookup mechanism for reward generator");
 				}
 				if (Double.isNaN(rew))
-					throw new PrismException("Transition reward evaluates to NaN at state " + stateIndex);
+					throw new PrismException("State reward evaluates to NaN at state " + stateIndex);
 				if (!allowNegative && rew < 0)
-					throw new PrismException("Transition reward is negative (" + rew + ") at state " + stateIndex +"");
-				rewSimple.addToTransitionReward(s, k, rew);
+					throw new PrismException("State reward is negative (" + rew + ") at state " + stateIndex + "");
+				rewSimple.addToStateReward(s, rew);
+			}
+			// State-action rewards
+			if (rewardGen.rewardStructHasTransitionRewards(r)) {
+				int numChoices = mdp.getNumChoices(s);
+				for (int k = 0; k < numChoices; k++) {
+					switch (rewardGen.getRewardLookup()) {
+					case BY_STATE:
+						State state = statesList.get(s);
+						stateIndex = state;
+						rew = rewardGen.getStateActionReward(r, state, mdp.getAction(s, k));
+						break;
+					case BY_STATE_INDEX:
+						stateIndex = new Integer(s);
+						rew = rewardGen.getStateActionReward(r, s, mdp.getAction(s, k));
+						break;
+					default:
+						throw new PrismException("Unknown state lookup mechanism for reward generator");
+					}
+					if (Double.isNaN(rew))
+						throw new PrismException("Transition reward evaluates to NaN at state " + stateIndex);
+					if (!allowNegative && rew < 0)
+						throw new PrismException("Transition reward is negative (" + rew + ") at state " + stateIndex + "");
+					rewSimple.addToTransitionReward(s, k, rew);
+				}
 			}
 		}
 		return rewSimple;

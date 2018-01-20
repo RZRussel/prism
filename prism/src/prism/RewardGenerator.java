@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.List;
 
 import parser.State;
-import parser.ast.RewardStruct;
 
 /**
  * Interface for classes that generate rewards for a model.
@@ -68,13 +67,26 @@ public interface RewardGenerator
 	}
 	
 	/**
+	 * Returns true if the {@code r}th reward structure defines state rewards.
+	 * ({@code r} is indexed from 0, not from 1 like at the user (property language) level).
+	 * If this returns false, the model checker is allowed to ignore them (which may be more efficient).
+	 * If using an algorithm or implementation that does not support state rewards,
+	 * you may need to return false here (as well as not defining state rewards).
+	 */
+	public default boolean rewardStructHasStateRewards(int r)
+	{
+		// By default, assume that any reward structures that do exist may have state rewards
+		return true;
+	}
+	
+	/**
 	 * Returns true if the {@code r}th reward structure defines transition rewards.
 	 * ({@code r} is indexed from 0, not from 1 like at the user (property language) level).
 	 * If this returns false, the model checker is allowed to ignore them (which may be more efficient).
 	 * If using an algorithm or implementation that does not support transition rewards,
 	 * you may need to return false here (as well as not defining transition rewards).
 	 */
-	public default boolean hasTransitionRewards(int r)
+	public default boolean rewardStructHasTransitionRewards(int r)
 	{
 		// By default, assume that any reward structures that do exist may have transition rewards
 		return true;
@@ -112,6 +124,9 @@ public interface RewardGenerator
 	/**
 	 * Get the state reward of the {@code r}th reward structure for state {@code s}
 	 * ({@code r} is indexed from 0, not from 1 like at the user (property language) level).
+	 * If a reward structure has no state rewards, you can indicate this by implementing
+	 * the method {@link #rewardStructHasStateRewards(int)}, which may improve efficiency
+	 * and/or allow use of algorithms/implementations that do not support state rewards rewards.
 	 * @param r The index of the reward structure to use
 	 * @param s The index of the state in which to evaluate the rewards
 	 */

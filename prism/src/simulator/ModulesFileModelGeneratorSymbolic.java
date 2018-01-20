@@ -345,7 +345,13 @@ public class ModulesFileModelGeneratorSymbolic implements ModelGeneratorSymbolic
 	}
 	
 	@Override
-	public boolean hasTransitionRewards(int i)
+	public boolean rewardStructHasStateRewards(int i)
+	{
+		return modulesFile.rewardStructHasStateRewards(i);
+	}
+	
+	@Override
+	public boolean rewardStructHasTransitionRewards(int i)
 	{
 		return modulesFile.rewardStructHasTransitionRewards(i);
 	}

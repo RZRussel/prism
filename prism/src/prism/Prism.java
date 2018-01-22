@@ -260,6 +260,8 @@ public class Prism extends PrismComponent implements PrismSettingsListener
 	private ModulesFile currentModulesFile = null;
 	// Model generator (null if none loaded)
 	private ModelGenerator currentModelGenerator = null;
+	// Reward info
+	private RewardInfo currentRewardInfo = null;
 	// Reward generator (null if none loaded)
 	private RewardGenerator currentRewardGenerator = null;
 	// Constants to be defined for PRISM model
@@ -1720,6 +1722,7 @@ public class Prism extends PrismComponent implements PrismSettingsListener
 		// Reset dependent info
 		currentModelType = currentModulesFile == null ? null : currentModulesFile.getModelType();
 		currentModelInfo = currentModulesFile;
+		currentRewardInfo = currentModulesFile;
 		currentDefinedMFConstants = null;
 
 		// Print basic model info
@@ -1770,6 +1773,7 @@ public class Prism extends PrismComponent implements PrismSettingsListener
 		// Reset dependent info
 		currentModelType = currentModelGenerator == null ? null : currentModelGenerator.getModelType();
 		currentModelInfo = currentModelGenerator;
+		currentRewardInfo = currentRewardGenerator;
 		currentDefinedMFConstants = null;
 
 		// Print basic model info
@@ -1881,6 +1885,7 @@ public class Prism extends PrismComponent implements PrismSettingsListener
 		// Reset dependent info
 		currentModelType = currentModulesFile == null ? null : currentModulesFile.getModelType();
 		currentModelInfo = currentModulesFile;
+		currentRewardInfo = currentModulesFile;
 		currentDefinedMFConstants = null;
 
 		return currentModulesFile;
@@ -2366,7 +2371,7 @@ public class Prism extends PrismComponent implements PrismSettingsListener
 	 */
 	public void exportStateRewardsToFile(int exportType, File file) throws FileNotFoundException, PrismException
 	{
-		int numRewardStructs = currentRewardGenerator.getNumRewardStructs();
+		int numRewardStructs = currentRewardInfo.getNumRewardStructs();
 		if (numRewardStructs == 0) {
 			mainLog.println("\nOmitting state reward export as there are no reward structures");
 			return;
@@ -2425,7 +2430,7 @@ public class Prism extends PrismComponent implements PrismSettingsListener
 	 */
 	public void exportTransRewardsToFile(boolean ordered, int exportType, File file) throws FileNotFoundException, PrismException
 	{
-		int numRewardStructs = currentRewardGenerator.getNumRewardStructs();
+		int numRewardStructs = currentRewardInfo.getNumRewardStructs();
 		if (numRewardStructs == 0) {
 			mainLog.println("\nOmitting transition reward export as there are no reward structures");
 			return;

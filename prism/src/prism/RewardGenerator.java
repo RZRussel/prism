@@ -26,36 +26,15 @@
 
 package prism;
 
-import java.util.Collections;
-import java.util.List;
-
 import parser.State;
 
 /**
  * Interface for classes that generate rewards for a model.
  */
-public interface RewardGenerator
+public interface RewardGenerator extends RewardInfo
 {
 	/** Mechanisms for querying rewards */
 	public enum RewardLookup { BY_STATE, BY_STATE_INDEX };
-	
-	/**
-	 * Get the number of reward structures.
-	 */
-	public default int getNumRewardStructs()
-	{
-		// Default implementation just extracts from getRewardStructNames() 
-		return getRewardStructNames().size();
-	}
-	
-	/**
-	 * Get a list of the names of the reward structures.
-	 */
-	public default List<String> getRewardStructNames()
-	{
-		// No reward structures by default
-		return Collections.emptyList();
-	}
 	
 	/**
 	 * Returns the mechanism by which rewards are queried.

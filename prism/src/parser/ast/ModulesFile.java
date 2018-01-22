@@ -35,11 +35,12 @@ import prism.PrismException;
 import prism.PrismLangException;
 import prism.ModelType;
 import prism.PrismUtils;
+import prism.RewardInfo;
 import parser.type.*;
 
 // Class representing parsed model file
 
-public class ModulesFile extends ASTElement implements ModelInfo
+public class ModulesFile extends ASTElement implements ModelInfo, RewardInfo
 {
 	// Model type (enum)
 	private ModelType modelType;

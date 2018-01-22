@@ -32,11 +32,6 @@ import java.util.List;
 
 import parser.Values;
 import parser.VarList;
-import parser.ast.Declaration;
-import parser.ast.DeclarationBool;
-import parser.ast.DeclarationInt;
-import parser.ast.Expression;
-import parser.ast.RewardStruct;
 import parser.type.Type;
 
 /**

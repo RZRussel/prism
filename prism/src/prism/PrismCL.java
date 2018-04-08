@@ -54,6 +54,7 @@ import simulator.method.CIiterations;
 import simulator.method.CIwidth;
 import simulator.method.SPRTMethod;
 import simulator.method.SimulationMethod;
+import mtbddml.MTBDDML;
 
 // prism - command line version
 
@@ -201,6 +202,7 @@ public class PrismCL implements PrismModelListener
 	private String[] paramUpperBounds = null;
 	private String[] paramNames = null;
 
+	private String trainingPath;
 
 	/**
 	 * Entry point: call run method, catch CuddOutOfMemoryException
@@ -242,11 +244,23 @@ public class PrismCL implements PrismModelListener
 		// Initialise
 		initialise(args);
 
+		// TODO: make separate module for mtbdd vars order model training in future
+		if (trainingPath != null) {
+			try {
+				MTBDDML mtbddml = new MTBDDML(prism, trainingPath);
+				mtbddml.loadAndTrain();
+			} catch (Exception e) {
+				errorAndExit(e.getMessage());
+			}
+			return;
+		}
+
 		// Parse/load model/properties
 		doParsing();
 
 		// Sort out properties to check
 		sortProperties();
+
 
 		if (param && numPropertiesToCheck == 0) {
 			errorAndExit("Parametric model checking requires at least one property to check");
@@ -1177,6 +1191,10 @@ public class PrismCL implements PrismModelListener
 					test = true;
 					testExitsOnFail = false;
 				}
+				// train ml model for mtbdd ordering
+				else if (sw.equals("mtbddtrain")) {
+					trainingPath = args[++i];
+				}
 
 				// DD Debugging options
 				else if (sw.equals("dddebug")) {
@@ -2074,6 +2092,11 @@ public class PrismCL implements PrismModelListener
 	private void processOptions() throws PrismException
 	{
 		int j;
+
+		// we are going just to train a model to order vars for mtbdd
+		if (trainingPath != null) {
+			return;
+		}
 
 		// make sure a model file is specified
 		if (modelFilename == null) {

@@ -1,10 +1,11 @@
 package mtbddml;
 
 import java.io.File;
-import java.io.FileFilter;
+import java.util.Set;
 
 import jdd.JDD;
 import jdd.JDDNode;
+import parser.VarList;
 import parser.ast.ModulesFile;
 import prism.*;
 
@@ -28,7 +29,7 @@ public class MTBDDML {
         }
 
         File directory = new File(trainingDirPath);
-        File[] directoryListing = directory.listFiles(pathname -> !pathname.isDirectory());
+        File[] directoryListing = directory.listFiles(pathname -> !pathname.isDirectory() && !pathname.isHidden());
 
         if (directoryListing == null || directoryListing.length == 0) {
             prism.getMainLog().print("Warning: Training directory is empty\n");
@@ -37,6 +38,15 @@ public class MTBDDML {
 
         for (File modelFile: directoryListing) {
             ModulesFile parsedModel =  prism.parseModelFile(modelFile);
+            VarList varList = parsedModel.createVarList();
+
+            InteractivePairExtractor pairExtractor = new InteractivePairExtractor(parsedModel);
+            Set<VarPair> pairs = pairExtractor.extract();
+
+            prism.getMainLog().print("Interactive pairs:\n");
+            for (VarPair pair: pairs) {
+                prism.getMainLog().print(varList.getName(pair.firstIndex) + " " + varList.getName(pair.secondIndex) + "\n");
+            }
 
             //SamplesGenerator samplesGenerator = new RandomSamplesGenerator(parsedModel, TRAINING_SAMPLES_COUNT);
             SamplesGenerator samplesGenerator = new SequentialSamplesGenerator(parsedModel, TRAINING_SAMPLES_COUNT);

@@ -12,6 +12,10 @@ public class VarPair {
         this.secondIndex = secondIndex;
     }
 
+    public VarPair inversed() {
+        return new VarPair(secondIndex, firstIndex);
+    }
+
     public int hashCode() {
         return toString().hashCode();
     }

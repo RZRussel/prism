@@ -1,6 +1,8 @@
 package mtbddml;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 import jdd.JDD;
@@ -13,7 +15,8 @@ import prism.*;
  * Created by russel on 06.04.18.
  */
 public class MTBDDML {
-    static final int TRAINING_SAMPLES_COUNT = 10;
+    static final int TRAINING_SAMPLES_COUNT = 200;
+    static final double LABEL_TRESHOLD = 50.0;
 
     private Prism prism;
     private String trainingDirPath;
@@ -43,13 +46,9 @@ public class MTBDDML {
             InteractivePairExtractor pairExtractor = new InteractivePairExtractor(parsedModel);
             Set<VarPair> pairs = pairExtractor.extract();
 
-            prism.getMainLog().print("Interactive pairs:\n");
-            for (VarPair pair: pairs) {
-                prism.getMainLog().print(varList.getName(pair.firstIndex) + " " + varList.getName(pair.secondIndex) + "\n");
-            }
-
-            //SamplesGenerator samplesGenerator = new RandomSamplesGenerator(parsedModel, TRAINING_SAMPLES_COUNT);
-            SamplesGenerator samplesGenerator = new SequentialSamplesGenerator(parsedModel, TRAINING_SAMPLES_COUNT);
+            SamplesGenerator samplesGenerator = new RandomSamplesGenerator(parsedModel, TRAINING_SAMPLES_COUNT);
+            //SamplesGenerator samplesGenerator = new SequentialSamplesGenerator(parsedModel, TRAINING_SAMPLES_COUNT);
+            HashSet<PermutationEval> permEvals = new HashSet<>();
             while (samplesGenerator.hasNext()) {
                 int[] varPermutation = samplesGenerator.next();
 
@@ -59,13 +58,21 @@ public class MTBDDML {
                 Model model = modelTranslator.translate();
 
                 JDDNode transitions = model.getTrans();
+                PermutationEval e = new PermutationEval(varPermutation, JDD.GetNumNodes(transitions));
+                permEvals.add(e);
+            }
 
-                prism.getMainLog().print(modelFile.getName() + ": number of nodes in MTBDD " + JDD.GetNumNodes(transitions) + "\n");
-                prism.getMainLog().print("Permutation:\n");
-                for(int i = 0; i < varPermutation.length; i++) {
-                    prism.getMainLog().print(varPermutation[i] + " ");
-                }
-                prism.getMainLog().print("\n");
+            AverageUtilityFunction utility = new AverageUtilityFunction(permEvals);
+            UtilityPairTagger tagger = new UtilityPairTagger(utility, LABEL_TRESHOLD);
+
+            Collection<LabeledPair> labeledPairs = tagger.tagAll(pairs);
+
+            prism.getMainLog().print(modelFile.getName() + ":\n");
+
+            for (LabeledPair labeledPair: labeledPairs) {
+                prism.getMainLog().print(varList.getName(labeledPair.pair.firstIndex));
+                prism.getMainLog().print(" " + varList.getName(labeledPair.pair.secondIndex));
+                prism.getMainLog().print(" " + labeledPair.label + "\n");
             }
 
         }

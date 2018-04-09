@@ -196,13 +196,13 @@ public class Modules2MTBDD
 		sortDDVars();
 		sortIdentities();
 		sortRanges();
-		
+
 		// create stripped-down StateModelChecker for expression to MTBDD conversions
 		expr2mtbdd = new StateModelChecker(prism, varList, allDDRowVars, varDDRowVars, constantValues);
 		
 		// translate modules file into dd
 		translateModules();
-		
+
 		// get rid of any nondet dd variables not needed
 		if (modelType == ModelType.MDP) {
 			tmp = JDD.GetSupport(trans);

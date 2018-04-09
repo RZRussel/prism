@@ -74,6 +74,9 @@ public class ModulesFile extends ASTElement implements ModelInfo
 	// Actual values of (some or all) constants
 	private Values constantValues;
 
+	// Permutation that controls variables order in the list
+	private int[] varPermutation;
+
 	// Constructor
 
 	public ModulesFile()
@@ -523,6 +526,14 @@ public class ModulesFile extends ASTElement implements ModelInfo
 	public String getSynch(int i)
 	{
 		return synchs.get(i);
+	}
+
+	public void setVarPermutation(int[] varPermutation) {
+		this.varPermutation = varPermutation;
+	}
+
+	public int[] getVarPermutation() {
+		return varPermutation;
 	}
 
 	public boolean isSynch(String s)
@@ -1197,7 +1208,9 @@ public class ModulesFile extends ASTElement implements ModelInfo
 	 */
 	public VarList createVarList() throws PrismLangException
 	{
-		return new VarList(this);
+		VarList varList = new VarList(this);
+		varList.setVarPermutation(varPermutation);
+		return varList;
 	}
 
 	// Methods required for ASTElement:

@@ -48,6 +48,8 @@ public class VarList
 	// Total number of bits needed  to encode
 	private int totalNumBits;
 
+	private int[] varPermutation;
+
 	/**
 	 * Construct empty variable list.
 	 */
@@ -88,6 +90,7 @@ public class VarList
 		}
 	}
 
+
 	/**
 	 * Add a new variable to the end of the VarList.
 	 * @param decl Declaration defining the variable
@@ -113,13 +116,26 @@ public class VarList
 		Var var = createVar(decl, module, constantValues);
 		vars.add(i, var);
 		totalNumBits += getRangeLogTwo(i);
-		// Recompute name map
+
+		recomputeNameMap();
+	}
+
+	public void setVarPermutation(int[] varPermutation) {
+		this.varPermutation = varPermutation;
+		recomputeNameMap();
+	}
+
+	private void recomputeNameMap() {
 		int j, n;
 		n = getNumVars();
 		nameMap = new HashMap<String, Integer>(n);
 		for (j = 0; j < n; j++) {
 			nameMap.put(getName(j), j);
 		}
+	}
+
+	private int getPermutedIndex(int i) {
+		return (varPermutation != null) ? varPermutation[i] : i;
 	}
 
 	/**
@@ -226,7 +242,7 @@ public class VarList
 	 */
 	public Declaration getDeclaration(int i)
 	{
-		return vars.get(i).decl;
+		return vars.get(getPermutedIndex(i)).decl;
 	}
 
 	/**
@@ -235,7 +251,7 @@ public class VarList
 	public int getIndexFromDeclaration(Declaration d)
 	{
 		for (int i=0;i<vars.size();i++) {
-			if (vars.get(i).decl == d) {
+			if (vars.get(getPermutedIndex(i)).decl == d) {
 				return i;
 			}
 		}
@@ -247,7 +263,7 @@ public class VarList
 	 */
 	public String getName(int i)
 	{
-		return vars.get(i).decl.getName();
+		return vars.get(getPermutedIndex(i)).decl.getName();
 	}
 
 	/**
@@ -255,7 +271,7 @@ public class VarList
 	 */
 	public Type getType(int i)
 	{
-		return vars.get(i).decl.getDeclType().getType();
+		return vars.get(getPermutedIndex(i)).decl.getDeclType().getType();
 	}
 
 	/**
@@ -263,7 +279,7 @@ public class VarList
 	 */
 	public int getModule(int i)
 	{
-		return vars.get(i).module;
+		return vars.get(getPermutedIndex(i)).module;
 	}
 
 	/**
@@ -271,7 +287,7 @@ public class VarList
 	 */
 	public int getLow(int i)
 	{
-		return vars.get(i).low;
+		return vars.get(getPermutedIndex(i)).low;
 	}
 
 	/**
@@ -279,7 +295,7 @@ public class VarList
 	 */
 	public int getHigh(int i)
 	{
-		return vars.get(i).high;
+		return vars.get(getPermutedIndex(i)).high;
 	}
 
 	/**
@@ -287,7 +303,7 @@ public class VarList
 	 */
 	public int getRange(int i)
 	{
-		return vars.get(i).high - vars.get(i).low + 1;
+		return vars.get(getPermutedIndex(i)).high - vars.get(getPermutedIndex(i)).low + 1;
 	}
 
 	/**
@@ -311,7 +327,7 @@ public class VarList
 	 */
 	public int getStart(int i)
 	{
-		return vars.get(i).start;
+		return vars.get(getPermutedIndex(i)).start;
 	}
 
 	/**
@@ -514,6 +530,7 @@ public class VarList
 			rv.vars.add(new Var(vars.get(i)));
 			rv.nameMap.put(getName(i), i);
 		}
+		rv.setVarPermutation(varPermutation);
 		return rv;
 	}
 

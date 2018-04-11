@@ -1,10 +1,8 @@
 package mtbddml.features;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 
-/**
- * Created by russel on 11.04.18.
- */
 public class FeatureVector {
     ArrayList<Double> features = new ArrayList<>();
 
@@ -18,5 +16,20 @@ public class FeatureVector {
 
     public double getFeatureAtIndex(int index) {
         return features.get(index);
+    }
+
+    public String toString() {
+        String result = "(";
+        for (int i = 0; i < features.size(); i++) {
+            if (i > 0) {
+                result += "; ";
+            }
+
+            result += String.format("%.4f", features.get(i));
+        }
+
+        result += ")";
+
+        return result;
     }
 }

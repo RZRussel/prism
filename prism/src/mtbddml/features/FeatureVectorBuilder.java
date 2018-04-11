@@ -18,7 +18,8 @@ public class FeatureVectorBuilder {
     public FeatureVector build() throws PrismException {
         FeatureVector featureVector = new FeatureVector();
 
-        for(FeatureExtractor extractor: extractors) {
+        for(int i = 0; i < extractors.size(); i++) {
+            FeatureExtractor extractor = extractors.get(i);
             featureVector.addFeature(extractor.extract());
         }
 

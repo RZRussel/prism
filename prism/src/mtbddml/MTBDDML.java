@@ -7,6 +7,9 @@ import java.util.Set;
 
 import jdd.JDD;
 import jdd.JDDNode;
+import mtbddml.features.FeatureVectorBuilder;
+import mtbddml.features.VarDependenceExtractor;
+import mtbddml.features.VarDependencyExtractor;
 import parser.VarList;
 import parser.ast.ModulesFile;
 import prism.*;
@@ -62,6 +65,9 @@ public class MTBDDML {
                 permEvals.add(e);
             }
 
+            // reset var permutation
+            parsedModel.setVarPermutation(null);
+
             AverageUtilityFunction utility = new AverageUtilityFunction(permEvals);
             UtilityPairTagger tagger = new UtilityPairTagger(utility, LABEL_TRESHOLD);
 
@@ -73,6 +79,14 @@ public class MTBDDML {
                 prism.getMainLog().print(varList.getName(labeledPair.pair.firstIndex));
                 prism.getMainLog().print(" " + varList.getName(labeledPair.pair.secondIndex));
                 prism.getMainLog().print(" " + labeledPair.label + "\n");
+
+                FeatureVectorBuilder featureVectorBuilder = new FeatureVectorBuilder();
+                featureVectorBuilder.add(new VarDependenceExtractor(parsedModel, labeledPair.pair.firstIndex));
+                featureVectorBuilder.add(new VarDependenceExtractor(parsedModel, labeledPair.pair.secondIndex));
+                featureVectorBuilder.add(new VarDependencyExtractor(parsedModel, labeledPair.pair.firstIndex));
+                featureVectorBuilder.add(new VarDependencyExtractor(parsedModel, labeledPair.pair.secondIndex));
+
+                prism.getMainLog().print(featureVectorBuilder.build().toString() + "\n");
             }
 
         }

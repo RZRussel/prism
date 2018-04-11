@@ -10,6 +10,7 @@ import jdd.JDDNode;
 import mtbddml.features.FeatureVectorBuilder;
 import mtbddml.features.VarDependenceExtractor;
 import mtbddml.features.VarDependencyExtractor;
+import mtbddml.features.VarGuardDependencyExtractor;
 import parser.VarList;
 import parser.ast.ModulesFile;
 import prism.*;
@@ -85,6 +86,8 @@ public class MTBDDML {
                 featureVectorBuilder.add(new VarDependenceExtractor(parsedModel, labeledPair.pair.secondIndex));
                 featureVectorBuilder.add(new VarDependencyExtractor(parsedModel, labeledPair.pair.firstIndex));
                 featureVectorBuilder.add(new VarDependencyExtractor(parsedModel, labeledPair.pair.secondIndex));
+                featureVectorBuilder.add(new VarGuardDependencyExtractor(parsedModel, labeledPair.pair.firstIndex));
+                featureVectorBuilder.add(new VarGuardDependencyExtractor(parsedModel, labeledPair.pair.secondIndex));
 
                 prism.getMainLog().print(featureVectorBuilder.build().toString() + "\n");
             }

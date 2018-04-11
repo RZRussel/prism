@@ -10,9 +10,8 @@ import java.util.ArrayList;
 public class FeatureVectorBuilder {
     ArrayList<FeatureExtractor> extractors = new ArrayList<>();
 
-    public FeatureVectorBuilder add(FeatureExtractor extractor) {
+    public void add(FeatureExtractor extractor) {
         extractors.add(extractor);
-        return this;
     }
 
     public FeatureVector build() throws PrismException {

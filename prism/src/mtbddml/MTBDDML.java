@@ -7,10 +7,7 @@ import java.util.Set;
 
 import jdd.JDD;
 import jdd.JDDNode;
-import mtbddml.features.FeatureVectorBuilder;
-import mtbddml.features.VarDependenceExtractor;
-import mtbddml.features.VarDependencyExtractor;
-import mtbddml.features.VarGuardDependencyExtractor;
+import mtbddml.features.*;
 import parser.VarList;
 import parser.ast.ModulesFile;
 import prism.*;
@@ -81,18 +78,24 @@ public class MTBDDML {
                 prism.getMainLog().print(" " + varList.getName(labeledPair.pair.secondIndex));
                 prism.getMainLog().print(" " + labeledPair.label + "\n");
 
-                FeatureVectorBuilder featureVectorBuilder = new FeatureVectorBuilder();
-                featureVectorBuilder.add(new VarDependenceExtractor(parsedModel, labeledPair.pair.firstIndex));
-                featureVectorBuilder.add(new VarDependenceExtractor(parsedModel, labeledPair.pair.secondIndex));
-                featureVectorBuilder.add(new VarDependencyExtractor(parsedModel, labeledPair.pair.firstIndex));
-                featureVectorBuilder.add(new VarDependencyExtractor(parsedModel, labeledPair.pair.secondIndex));
-                featureVectorBuilder.add(new VarGuardDependencyExtractor(parsedModel, labeledPair.pair.firstIndex));
-                featureVectorBuilder.add(new VarGuardDependencyExtractor(parsedModel, labeledPair.pair.secondIndex));
+                FeatureVector featureVector = buildFeatureVector(parsedModel, labeledPair);
 
-                prism.getMainLog().print(featureVectorBuilder.build().toString() + "\n");
+                prism.getMainLog().print(featureVector.toString() + "\n");
             }
 
         }
     }
 
+    private FeatureVector buildFeatureVector(ModulesFile model, LabeledPair labeledPair) throws PrismException {
+        FeatureVectorBuilder featureVectorBuilder = new FeatureVectorBuilder();
+        featureVectorBuilder.add(new VarDependenceExtractor(model, labeledPair.pair.firstIndex));
+        featureVectorBuilder.add(new VarDependenceExtractor(model, labeledPair.pair.secondIndex));
+        featureVectorBuilder.add(new VarDependencyExtractor(model, labeledPair.pair.firstIndex));
+        featureVectorBuilder.add(new VarDependencyExtractor(model, labeledPair.pair.secondIndex));
+        featureVectorBuilder.add(new VarGuardDependencyExtractor(model, labeledPair.pair.firstIndex));
+        featureVectorBuilder.add(new VarGuardDependencyExtractor(model, labeledPair.pair.secondIndex));
+        featureVectorBuilder.add(new PairMinDistanceExtractor(model, labeledPair.pair, PairMinDistanceExtractor.SearchType.UPDATE));
+        featureVectorBuilder.add(new PairMinDistanceExtractor(model, labeledPair.pair, PairMinDistanceExtractor.SearchType.GUARD));
+        return featureVectorBuilder.build();
+    }
 }

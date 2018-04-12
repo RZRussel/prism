@@ -96,7 +96,9 @@ public class MTBDDML {
         featureVectorBuilder.add(new VarGuardDependencyExtractor(model, labeledPair.pair.secondIndex));
         featureVectorBuilder.add(new PairMinDistanceExtractor(model, labeledPair.pair, PairMinDistanceExtractor.SearchType.UPDATE));
         featureVectorBuilder.add(new PairMinDistanceExtractor(model, labeledPair.pair, PairMinDistanceExtractor.SearchType.GUARD));
-        featureVectorBuilder.add(new PairVarMutualDependence(model, labeledPair.pair));
+        featureVectorBuilder.add(new PairVarMutualDependenceExtractor(model, labeledPair.pair));
+        featureVectorBuilder.add(new PairVarMutualDependencyExtractor(model, labeledPair.pair));
+        featureVectorBuilder.add(new PairGuardMutualDependencyExtractor(model, labeledPair.pair));
         return featureVectorBuilder.build();
     }
 }

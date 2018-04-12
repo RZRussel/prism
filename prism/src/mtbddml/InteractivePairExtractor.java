@@ -123,18 +123,15 @@ public class InteractivePairExtractor extends PairExtractor implements ASTVisito
     }
 
     public Object visit(Update e) throws PrismLangException {
-        HashSet<String> varNames = new HashSet<>();
-
         int n = e.getNumElements();
         for(int i = 0; i < n; i++) {
             Expression expr = e.getExpression(i);
             HashSet<String> exprVarNames = (HashSet<String>) expr.accept(this);
             if (exprVarNames != null) {
-                varNames.addAll(exprVarNames);
+                exprVarNames.add(e.getVarIdent(i).getName());
+                createPairs(exprVarNames);
             }
         }
-
-        createPairs(varNames);
 
         return null;
     }

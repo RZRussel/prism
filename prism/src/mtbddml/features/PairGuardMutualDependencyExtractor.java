@@ -1,5 +1,6 @@
 package mtbddml.features;
 
+
 import mtbddml.VarPair;
 import parser.VarList;
 import parser.ast.*;
@@ -7,14 +8,13 @@ import prism.PrismLangException;
 
 import java.util.HashSet;
 
-public class PairVarMutualDependence extends VisitorFeatureExtractor {
+public class PairGuardMutualDependencyExtractor extends VisitorFeatureExtractor {
     private VarPair varPair;
     private VarList varList;
-    private HashSet<String> firstVarSet;
-    private HashSet<String> secondVarSet;
-    private double feature;
+    private int matchedGuardsCount = 0;
+    private int totalGuardsCount = 0;
 
-    public PairVarMutualDependence(ModulesFile modulesFile, VarPair varPair) {
+    public PairGuardMutualDependencyExtractor(ModulesFile modulesFile, VarPair varPair) {
         super(modulesFile);
 
         this.varPair = varPair;
@@ -22,29 +22,26 @@ public class PairVarMutualDependence extends VisitorFeatureExtractor {
 
     public double extract() throws PrismLangException {
         if (varList != null) {
-            return feature;
-        }
-
-        varList = getModulesFile().createVarList();
-        firstVarSet = new HashSet<>();
-        secondVarSet = new HashSet<>();
-
-        int n = getModulesFile().getNumModules();
-        for (int i = 0; i < n; i++) {
-            Module module = getModulesFile().getModule(i);
-            module.accept(this);
-        }
-
-        int commonVarCount = 0;
-        for(String varName: firstVarSet) {
-            if (secondVarSet.contains(varName)) {
-                commonVarCount++;
+            if (totalGuardsCount > 0) {
+                return (double) matchedGuardsCount / (double) totalGuardsCount;
+            } else {
+                return 0.0;
             }
         }
 
-        feature = (double) commonVarCount / (double) varList.getNumVars();
+        varList = getModulesFile().createVarList();
 
-        return feature;
+        int n = getModulesFile().getNumModules();
+        for (int i = 0; i < n; i++) {
+            Module module =  getModulesFile().getModule(i);
+            module.accept(this);
+        }
+
+        if (totalGuardsCount > 0) {
+            return (double) matchedGuardsCount / (double) totalGuardsCount;
+        } else {
+            return 0.0;
+        }
     }
 
     public Object visit(parser.ast.Module e) throws PrismLangException {
@@ -54,43 +51,18 @@ public class PairVarMutualDependence extends VisitorFeatureExtractor {
             command.accept(this);
         }
 
+        totalGuardsCount += n;
+
         return null;
     }
 
     public Object visit(Command e) throws PrismLangException {
-        return e.getUpdates().accept(this);
-    }
+        String firstName = varList.getName(varPair.firstIndex);
+        String secondName = varList.getName(varPair.secondIndex);
 
-    public Object visit(Updates e) throws PrismLangException {
-        int n = e.getNumUpdates();
-        for (int i = 0; i < n; i++) {
-            Update update = e.getUpdate(i);
-            update.accept(this);
-        }
-
-        return null;
-    }
-
-    public Object visit(Update e) throws PrismLangException {
-        int n = e.getNumElements();
-        for(int i = 0; i < n; i++) {
-            int index = varList.getIndex(e.getVarIdent(i).getName());
-
-            if (index == varPair.firstIndex) {
-                Expression expr = e.getExpression(i);
-                HashSet<String> varNames = (HashSet<String>) expr.accept(this);
-                if (varNames != null) {
-                    firstVarSet.addAll(varNames);
-                }
-            }
-
-            if (index == varPair.secondIndex) {
-                Expression expr = e.getExpression(i);
-                HashSet<String> varNames = (HashSet<String>) expr.accept(this);
-                if (varNames != null) {
-                    secondVarSet.addAll(varNames);
-                }
-            }
+        HashSet<String> varNames = (HashSet<String>) e.getGuard().accept(this);
+        if (varNames != null && varNames.contains(firstName) && varNames.contains(secondName)) {
+            matchedGuardsCount += 1;
         }
 
         return null;
@@ -183,5 +155,4 @@ public class PairVarMutualDependence extends VisitorFeatureExtractor {
         varNames.add(e.getName());
         return varNames;
     }
-
 }

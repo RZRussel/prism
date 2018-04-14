@@ -5,41 +5,80 @@ import parser.VarList;
 import parser.ast.*;
 import prism.PrismLangException;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 
 public class PairMinDistanceExtractor extends VisitorFeatureExtractor {
     public enum SearchType {
         UPDATE, GUARD;
     }
 
-    private class PairVarDistance {
+    private class VarDepth {
         int varIndex;
-        int varDepth;
+        int depth;
 
-        public PairVarDistance(int varIndex, int varDepth) {
+        VarDepth(int varIndex, int varDepth) {
             this.varIndex = varIndex;
-            this.varDepth = varDepth;
+            this.depth = varDepth;
         }
     }
 
+    private class Distance {
+        private int distance;
+        private boolean infinite;
+
+        Distance() {
+            this.infinite = true;
+        }
+
+        Distance(int distance) {
+            this.distance = distance;
+            this.infinite = false;
+        }
+
+        boolean isInfinite() {
+            return infinite;
+        }
+
+        int getDistance() {
+            return distance;
+        }
+    }
+
+    private class PairMinDistance {
+        Distance minDistance;
+        HashSet<VarDepth> varDistances;
+
+        PairMinDistance(HashSet<VarDepth> varDistances, Distance minDistance) {
+            this.varDistances = varDistances;
+            this.minDistance = minDistance;
+        }
+
+        void incrementDepth() {
+            for (VarDepth v: varDistances) {
+                v.depth++;
+            }
+        }
+    }
+
+
     private VarPair varPair;
     private VarList varList;
-    private double minDistance = 1.0;
     private SearchType searchType;
+    private FeatureReducer reducer;
+    private double feature;
 
-    public PairMinDistanceExtractor(ModulesFile modulesFile, VarPair varPair, SearchType searchType) {
+    public PairMinDistanceExtractor(ModulesFile modulesFile, VarPair varPair, SearchType searchType, FeatureReducer reducer) {
         super(modulesFile);
 
         this.varPair = varPair;
+        this.reducer = reducer;
         this.searchType = searchType;
     }
 
     @Override
     public double extract() throws PrismLangException {
         if (varList != null) {
-            return minDistance;
+            return feature;
         }
 
         varList = getModulesFile().createVarList();
@@ -50,7 +89,14 @@ public class PairMinDistanceExtractor extends VisitorFeatureExtractor {
             module.accept(this);
         }
 
-        return minDistance;
+        if (reducer.canReduce()) {
+            double distance = reducer.reduce();
+            feature = distance / (10 + distance);
+        } else {
+            feature = 1.0;
+        }
+
+        return feature;
     }
 
     public Object visit(parser.ast.Module e) throws PrismLangException {
@@ -68,7 +114,10 @@ public class PairMinDistanceExtractor extends VisitorFeatureExtractor {
         if (searchType == SearchType.UPDATE) {
             e.getUpdates().accept(this);
         } else if (searchType == SearchType.GUARD) {
-            e.getGuard().accept(this);
+            PairMinDistance md = (PairMinDistance) e.getGuard().accept(this);
+            if (!md.minDistance.isInfinite()) {
+                reducer.collect(md.minDistance.getDistance());
+            }
         }
 
         return null;
@@ -87,24 +136,11 @@ public class PairMinDistanceExtractor extends VisitorFeatureExtractor {
     public Object visit(Update e) throws PrismLangException {
         int n = e.getNumElements();
         for(int i = 0; i < n; i++) {
-            ExpressionIdent ident = e.getVarIdent(i);
-            int varIndex = varList.getIndex(ident.getName());
+            Expression expr = e.getExpression(i);
 
-            if (varIndex == varPair.firstIndex || varIndex == varPair.secondIndex) {
-                ArrayList<HashSet<PairVarDistance>> varSets = new ArrayList<>();
-
-                HashSet<PairVarDistance> varSet = new HashSet<>();
-                varSet.add(new PairVarDistance(varIndex, 1));
-
-                varSets.add(varSet);
-
-                Expression expr = e.getExpression(i);
-                HashSet<PairVarDistance> exprSet = (HashSet<PairVarDistance>) expr.accept(this);
-                incrementDepth(exprSet);
-
-                varSets.add(exprSet);
-
-                updateMinDistance(varSets);
+            PairMinDistance md = (PairMinDistance) expr.accept(this);
+            if (!md.minDistance.isInfinite()) {
+                reducer.collect(md.minDistance.getDistance());
             }
         }
 
@@ -112,132 +148,102 @@ public class PairMinDistanceExtractor extends VisitorFeatureExtractor {
     }
 
     public Object visit(ExpressionITE e) throws PrismLangException {
-        ArrayList<HashSet<PairVarDistance>> varSets = new ArrayList<>();
+        PairMinDistance md1 = (PairMinDistance) e.getOperand1().accept(this);
+        md1.incrementDepth();
 
-        HashSet<PairVarDistance> opSet = (HashSet<PairVarDistance>) e.getOperand1().accept(this);
-        incrementDepth(opSet);
+        PairMinDistance md2 = (PairMinDistance) e.getOperand2().accept(this);
+        md2.incrementDepth();
 
-        varSets.add(opSet);
+        PairMinDistance md3 = (PairMinDistance) e.getOperand3().accept(this);
+        md3.incrementDepth();
 
-        opSet = (HashSet<PairVarDistance>) e.getOperand2().accept(this);
-        incrementDepth(opSet);
-
-        varSets.add(opSet);
-
-        opSet = (HashSet<PairVarDistance>) e.getOperand3().accept(this);
-        incrementDepth(opSet);
-
-        varSets.add(opSet);
-
-        updateMinDistance(varSets);
-
-        return merge(varSets);
+        return merge(merge(md1, md2), md3);
     }
 
     public Object visit(ExpressionBinaryOp e) throws PrismLangException {
-        ArrayList<HashSet<PairVarDistance>> varSets = new ArrayList<>();
+        PairMinDistance md1 = (PairMinDistance) e.getOperand1().accept(this);
+        md1.incrementDepth();
 
-        HashSet<PairVarDistance> opSet = (HashSet<PairVarDistance>) e.getOperand1().accept(this);
-        incrementDepth(opSet);
+        PairMinDistance md2 = (PairMinDistance) e.getOperand2().accept(this);
+        md2.incrementDepth();
 
-        varSets.add(opSet);
-
-        opSet = (HashSet<PairVarDistance>) e.getOperand2().accept(this);
-        incrementDepth(opSet);
-
-        varSets.add(opSet);
-
-        updateMinDistance(varSets);
-
-        return merge(varSets);
+        return merge(md1, md2);
     }
 
     public Object visit(ExpressionUnaryOp e) throws PrismLangException {
-        HashSet<PairVarDistance> varSet = (HashSet<PairVarDistance>) e.getOperand().accept(this);
-        incrementDepth(varSet);
-        return varSet;
+        PairMinDistance md = (PairMinDistance) e.getOperand().accept(this);
+        md.incrementDepth();
+        return md;
     }
 
     public Object visit(ExpressionFunc e) throws PrismLangException {
-        ArrayList<HashSet<PairVarDistance>> varSets = new ArrayList<>();
+        PairMinDistance md = new PairMinDistance(new HashSet<>(), new Distance());
 
         int n = e.getNumOperands();
         for (int i = 0; i < n; i++) {
             Expression op = e.getOperand(i);
-            HashSet<PairVarDistance> varSet = (HashSet<PairVarDistance>) op.accept(this);
-            incrementDepth(varSet);
-            varSets.add(varSet);
+            PairMinDistance md1 = (PairMinDistance) op.accept(this);
+            md1.incrementDepth();
+            md = merge(md, md1);
         }
 
-        updateMinDistance(varSets);
-
-        return merge(varSets);
-    }
-
-    public Object visit(ExpressionIdent e) throws PrismLangException {
-        FormulaList formulas = getModulesFile().getFormulaList();
-        int index = formulas.getFormulaIndex(e.getName());
-
-        if (index == -1) {
-            return false;
-        }
-
-        Expression expr = formulas.getFormula(index);
-        return expr.accept(this);
+        return md;
     }
 
     public Object visit(ExpressionLiteral e) throws PrismLangException {
-        return new HashSet<>();
+        return new PairMinDistance(new HashSet<>(), new Distance());
     }
 
     public Object visit(ExpressionConstant e) throws PrismLangException {
-        return new HashSet<>();
+        return new PairMinDistance(new HashSet<>(), new Distance());
     }
 
     public Object visit(ExpressionVar e) throws PrismLangException {
-        HashSet<PairVarDistance> varSet = new HashSet<>();
+        HashSet<VarDepth> varSet = new HashSet<>();
 
         int varIndex = varList.getIndex(e.getName());
         if (varIndex == varPair.firstIndex || varIndex == varPair.secondIndex) {
-            varSet.add(new PairVarDistance(varIndex, 0));
+            varSet.add(new VarDepth(varIndex, 0));
         }
 
-        return varSet;
+        return new PairMinDistance(varSet, new Distance());
     }
 
-    private void incrementDepth(HashSet<PairVarDistance> varSet) {
-        for (PairVarDistance alt: varSet) {
-            alt.varDepth++;
+
+    private Distance computeMinDistance(PairMinDistance md1, PairMinDistance md2) {
+        Distance minDistance;
+
+        if (!md1.minDistance.isInfinite() && !md2.minDistance.isInfinite()) {
+            minDistance = new Distance(Math.min(md1.minDistance.getDistance(), md2.minDistance.getDistance()));
+        } else if (!md1.minDistance.isInfinite()) {
+            minDistance = new Distance(md1.minDistance.getDistance());
+        } else if (!md2.minDistance.isInfinite()) {
+            minDistance = new Distance(md2.minDistance.getDistance());
+        } else {
+            minDistance = new Distance();
         }
-    }
 
-    private void updateMinDistance(List<HashSet<PairVarDistance>> varSets) {
-        int n = varSets.size();
-        for (int i = 0; i < n; i++) {
-            HashSet<PairVarDistance> s1 = varSets.get(i);
-            for(int j = i + 1; j < n; j++) {
-                HashSet<PairVarDistance> s2 = varSets.get(j);
-
-                for (PairVarDistance p1: s1) {
-                    for (PairVarDistance p2: s2) {
-                        if (p1.varIndex != p2.varIndex) {
-                            double x = Math.sqrt(p1.varDepth + p2.varDepth);
-                            double distance = x / (1 + x);
-                            if (distance < this.minDistance) {
-                                this.minDistance = distance;
-                            }
-                        }
+        for (VarDepth v1: md1.varDistances) {
+            for (VarDepth v2: md2.varDistances) {
+                if (v1.varIndex != v2.varIndex) {
+                    int distance = v1.depth + v2.depth;
+                    if (minDistance.isInfinite() || distance < minDistance.getDistance()) {
+                        minDistance = new Distance(distance);
                     }
                 }
             }
         }
+
+        return minDistance;
     }
 
-    private HashSet<PairVarDistance> merge(List<HashSet<PairVarDistance>> varSet) {
-        HashSet<PairVarDistance> mergedSet = new HashSet<>();
-        for (HashSet<PairVarDistance> alt: varSet) {
-            mergedSet.addAll(alt);
-        }
-        return mergedSet;
+    private PairMinDistance merge(PairMinDistance md1, PairMinDistance md2) {
+        Distance minDistance = computeMinDistance(md1, md2);
+
+        HashSet<VarDepth> mergedSet = new HashSet<>();
+        mergedSet.addAll(md1.varDistances);
+        mergedSet.addAll(md2.varDistances);
+
+        return new PairMinDistance(mergedSet, minDistance);
     }
 }
